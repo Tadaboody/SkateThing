@@ -12,8 +12,7 @@ class Player extends Node {
         this.right = right
         this.color = color
         this.movementSpeed = 100
-        this.direction = 0
-        this.controlModifier = 1
+        this.rotationSpeed = 2
     }
 
     ready() {
@@ -23,18 +22,17 @@ class Player extends Node {
 
     update(deltatime) {
         const deltaTimeInSec = deltatime / 1000;
-        if (this.inputManager.isDown('a')) {
-            this.direction -= deltaTimeInSec * this.controlModifier
+        if (this.inputManager.isDown(this.left)) {
+            this.rotation -= deltaTimeInSec * this.rotationSpeed
         }
-        if (this.inputManager.isDown('d')) {
-            this.direction += deltaTimeInSec * this.controlModifier
+        if (this.inputManager.isDown(this.right)) {
+            this.rotation += deltaTimeInSec * this.rotationSpeed
         }
 
         const scaledMoveSpeed = deltaTimeInSec * this.movementSpeed
-        const movementDirection = Matrix2x2.rotate(this.direction).apply(new Vector2(1, 0))
+        const movementDirection = Matrix2x2.rotate(this.rotation).apply(new Vector2(1, 0))
         const movementDelta = movementDirection.mul(scaledMoveSpeed)
         this.position = this.position.add(movementDelta);
-        this.rotation = this.direction
     }
 }
 
@@ -52,10 +50,8 @@ class Player extends Node {
 
 class MainScene extends YOrderedGroup {
     ready() {
-        this.player = new Player('a', 'd', '#FFFFFF')
-        // this.block = new Rectangle(new Vector2(100, 30), 'gold', new Vector2(300, 300), Math.PI / 8);
-        // this.addChild(this.block);
-        this.addChild(this.player);
+        this.players = [new Player('a', 'd', '#FFFFFF'), new Player('k', 'l', '#FFFF00')]
+        this.players.forEach(player => this.addChild(player))
         this.camera = new Camera()
         this.addChild(this.camera)
         this.camera.setActive()
