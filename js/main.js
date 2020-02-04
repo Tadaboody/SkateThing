@@ -6,11 +6,12 @@ import Camera from "./engino/engino/Nodes/Camera.js";
 
 
 class Player extends Node {
-    constructor(left, right, color, ...args) {
+    constructor(directions, color, rink, ...args) {
         super(...args)
-        this.left = left
-        this.right = right
+        this.left = directions[0]
+        this.right = directions[1]
         this.color = color
+        this.rink = rink
         this.movementSpeed = 100
         this.rotationSpeed = 2
     }
@@ -33,6 +34,7 @@ class Player extends Node {
         const movementDirection = Matrix2x2.rotate(this.rotation).apply(new Vector2(1, 0))
         const movementDelta = movementDirection.mul(scaledMoveSpeed)
         this.position = this.position.add(movementDelta);
+        this.rink.skatePoint(this.position)
     }
 }
 
@@ -50,8 +52,10 @@ class SkatingRink extends Node {
     }
 
     setPoint(point, value) {
+        point.x = Math.floor(point.x)
+        point.y = Math.floor(point.y)
         for (let index = 0; index < 4; index++) {
-            this.grid[(point.x * this.dimensions.x) + (point.y * 4) + index] = value[index]
+            this.grid[(point.x * 4) + (point.y * this.dimensions.x * 4) + index] = value[index]
         }
     }
 
@@ -68,12 +72,17 @@ class SkatingRink extends Node {
 }
 
 class MainScene extends YOrderedGroup {
+    addPlayer(direction, color) {
+        this.players.push(new Player(direction, color, this.rink))
+    }
     ready() {
-        this.rink = new SkatingRink(new Vector2(1000, 1000))
-        this.players = [new Player('a', 'd', '#FFFFFF'), new Player('k', 'l', '#FFFF00')]
+        this.rink = new SkatingRink(new Vector2(this.engine.canvas.height, this.engine.canvas.width))
+        this.addChild(this.rink)
+        this.players = []
+        this.addPlayer(['a', 'd'], "#FFFFFF")
+        this.addPlayer(['k', 'l'], '#FFFF00')
         this.players.forEach(player => this.addChild(player))
         this.camera = new Camera()
-        this.addChild(this.rink)
         this.addChild(this.camera)
         this.camera.setActive()
     }
