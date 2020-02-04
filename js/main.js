@@ -38,25 +38,25 @@ class Player extends Node {
     }
 }
 
-const RinkStates = {
-    Skated: [0xFF, 0xFF, 0xFF, 0xFF],
-    Empty: [0x00, 0xFF, 0xFF, 0xFF],
-    Water: [0xFF, 0x00, 0xFF, 0xFF],
+const RinkStates =
+{
+    Skated: "#FFFFFF",
+    Empty: "#00FFFF",
+    Water: "#FF0000",
 }
+
 
 class SkatingRink extends Node {
     constructor(dimensions, ...args) {
         super(...args)
-        this.grid = new Uint8ClampedArray(dimensions.x * dimensions.y * 4)
+        this.grid = new OffscreenCanvas(dimensions.x, dimensions.y)
         this.dimensions = dimensions
     }
 
     setPoint(point, value) {
-        point.x = Math.floor(point.x)
-        point.y = Math.floor(point.y)
-        for (let index = 0; index < 4; index++) {
-            this.grid[(point.x * 4) + (point.y * this.dimensions.x * 4) + index] = value[index]
-        }
+        const context = this.grid.getContext("2d");
+        context.fillStyle = value
+        context.fillRect(point.x, point.y, 2, 2)
     }
 
     skatePoint(point) {
@@ -64,25 +64,30 @@ class SkatingRink extends Node {
     }
 
     render(context) {
-        const imData = context.createImageData(this.dimensions.x, this.dimensions.y)
-        this.grid.forEach((value, index) => imData.data[index] = value)
-        context.putImageData(imData, 0, 0)
+        context.drawImage(this.grid, 0, 0)
     }
 
 }
 
 class MainScene extends YOrderedGroup {
+
     addPlayer(direction, color) {
-        this.players.push(new Player(direction, color, this.rink))
+        const center = this.canvasDims.mul(0.5);
+        this.players.push(new Player(direction, color, this.rink, center))
     }
+
+    get canvasDims() {
+        return new Vector2(this.engine.canvas.width, this.engine.canvas.height);
+    }
+
     ready() {
-        this.rink = new SkatingRink(new Vector2(this.engine.canvas.height, this.engine.canvas.width))
+        this.rink = new SkatingRink(this.canvasDims)
         this.addChild(this.rink)
         this.players = []
         this.addPlayer(['a', 'd'], "#FFFFFF")
         this.addPlayer(['k', 'l'], '#FFFF00')
         this.players.forEach(player => this.addChild(player))
-        this.camera = new Camera()
+        this.camera = new Camera(this.canvasDims.div(2))
         this.addChild(this.camera)
         this.camera.setActive()
     }
