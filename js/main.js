@@ -36,23 +36,44 @@ class Player extends Node {
     }
 }
 
-// class Map extends Node {
-//     ready() {
-//         this.grid = []
-//     }
+const RinkStates = {
+    Skated: [0xFF, 0xFF, 0xFF, 0xFF],
+    Empty: [0x00, 0xFF, 0xFF, 0xFF],
+    Water: [0xFF, 0x00, 0xFF, 0xFF],
+}
 
-//     /// param
-//     addSkatedPoint(point) {
+class SkatingRink extends Node {
+    constructor(dimensions, ...args) {
+        super(...args)
+        this.grid = new Uint8ClampedArray(dimensions.x * dimensions.y * 4)
+        this.dimensions = dimensions
+    }
 
-//     }
+    setPoint(point, value) {
+        for (let index = 0; index < 4; index++) {
+            this.grid[(point.x * this.dimensions.x) + (point.y * 4) + index] = value[index]
+        }
+    }
 
-// }
+    skatePoint(point) {
+        this.setPoint(point, RinkStates.Skated)
+    }
+
+    render(context) {
+        const imData = context.createImageData(this.dimensions.x, this.dimensions.y)
+        this.grid.forEach((value, index) => imData.data[index] = value)
+        context.putImageData(imData, 0, 0)
+    }
+
+}
 
 class MainScene extends YOrderedGroup {
     ready() {
+        this.rink = new SkatingRink(new Vector2(1000, 1000))
         this.players = [new Player('a', 'd', '#FFFFFF'), new Player('k', 'l', '#FFFF00')]
         this.players.forEach(player => this.addChild(player))
         this.camera = new Camera()
+        this.addChild(this.rink)
         this.addChild(this.camera)
         this.camera.setActive()
     }
