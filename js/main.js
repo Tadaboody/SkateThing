@@ -33,8 +33,9 @@ class Player extends Node {
         const scaledMoveSpeed = deltaTimeInSec * this.movementSpeed
         const movementDirection = Matrix2x2.rotate(this.rotation).apply(new Vector2(1, 0))
         const movementDelta = movementDirection.mul(scaledMoveSpeed)
-        this.position = this.position.add(movementDelta);
-        this.rink.skatePoint(this.position)
+        const newPosition = this.position.add(movementDelta);
+        this.rink.setLine(this.position, newPosition, RinkStates.Skated)
+        this.position = newPosition;
     }
 }
 
@@ -57,6 +58,19 @@ class SkatingRink extends Node {
         const context = this.grid.getContext("2d");
         context.fillStyle = value
         context.fillRect(point.x, point.y, 2, 2)
+    }
+
+    setLine(start, end, value) {
+        const context = this.context;
+        context.strokeStyle = value
+        context.lineWidth = 5
+        context.moveTo(start.x, start.y)
+        context.lineTo(end.x, end.y)
+        context.stroke()
+    }
+
+    get context() {
+        return this.grid.getContext("2d");
     }
 
     skatePoint(point) {
