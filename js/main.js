@@ -3,6 +3,7 @@ import Rectangle from "./engino/engino/Nodes/Rectangle.js";
 import { YOrderedGroup } from "./engino/engino/Nodes/YOrderedGroup.js";
 import { Vector2, clamp, Matrix2x2 } from "./engino/engino/Utilities.js";
 import Camera from "./engino/engino/Nodes/Camera.js";
+import { getLine, floor } from "./tools.js";
 
 
 class Player extends Node {
@@ -19,14 +20,20 @@ class Player extends Node {
     ready() {
         this.sprite = new Rectangle(new Vector2(10, 10), this.color)
         this.addChild(this.sprite)
+        this.inputManager.attachKey(this.right)
+        this.inputManager.attachKey(this.left)
+    }
+
+    normalize(key) {
+        return key
     }
 
     update(deltatime) {
         const deltaTimeInSec = deltatime / 1000;
-        if (this.inputManager.isDown(this.left)) {
+        if (this.inputManager.isDown(this.normalize(this.left))) {
             this.rotation -= deltaTimeInSec * this.rotationSpeed
         }
-        if (this.inputManager.isDown(this.right)) {
+        if (this.inputManager.isDown(this.normalize(this.right))) {
             this.rotation += deltaTimeInSec * this.rotationSpeed
         }
 
@@ -52,7 +59,7 @@ class SkatingRink extends Node {
         super(...args)
         this.drawingCanvas = new OffscreenCanvas(dimensions.x, dimensions.y)
         // canvas where we draw 1-width lines to make the closed shape detection easier
-        this.shadowCanvas = new OffscreenCanvas(dimensions.x, dimensions.y)
+        this.shadowArray = new Uint32Array(dimensions.x * dimensions.y)
         this.dimensions = dimensions
     }
 
@@ -60,30 +67,51 @@ class SkatingRink extends Node {
         function draw(context, width) {
             context.strokeStyle = value
             context.lineWidth = width
+            context.beginPath()
             context.moveTo(start.x, start.y)
             context.lineTo(end.x, end.y)
             context.stroke()
         }
-        draw(this.drawingCanvas.getContext("2d"), 5)
-        draw(this.shadowCanvas.getContext("2d"), 1)
-        if (this.isIntersection(start, end)) {
-            this.drawingCanvas.getContext("2d").fillStyle = "#FF0000"
+        draw(this.drawingCanvas.getContext("2d"), 0.5)
+        if (!(start.equals(end)) && this.isIntersection(start, end)) {
             this.drawingCanvas.getContext("2d").fillRect(end.x, end.y, 10, 10)
         }
+        this.shadraw(start, end)
+    }
+
+    /// how did names come to this
+    shadraw(start, end) {
+        start = floor(start)
+        end = floor(end)
+        getLine(start, end).forEach(point => this.shadowArray[this.getShaIndex(point)] = 0xFFFFFF)
+    }
+
+    getShaIndex(point) {
+        return point.x + point.y * this.dimensions.x
+    }
+
+    followClosedShape(lastPoint, currentPoint) {
+        function fourWayNeighbors(point) {
+            const directions = [new Vector2(1, 0), new Vector2(-1, 0), new Vector2(0, 1), new Vector2(0, -1)];
+            return directions.map(direction => point.add(direction));
+        }
+        let nextPoints = fourWayNeighbors(currentPoint)
+        nextPoints = nextPoints.filter(point => !point.equals(lastPoint))
+        nextPoints = nextPoints.filter(this.isSkated.bind(this))
+        if (nextPoints.length != 1) {
+            console.error("Oh no!")
+            return
+        }
+        return this.followClosedShape(currentPoint, nextPoint)
+    }
+
+    isSkated(point) {
+        return this.shadowArray[this.getShaIndex(point)] == 0xFFFFFF
     }
 
     isIntersection(start, end) {
-        const line = [end]
-        const context = this.shadowCanvas.getContext("2d")
-        function isSkated(point) {
-            const data = context.getImageData(point.x, point.y, 1, 1).data
-            return data.every(color => color == 0xFF)
-        }
-        return line.some(isSkated.bind(this))
-    }
-
-    skatePoint(point) {
-        this.setPoint(point, RinkStates.Skated)
+        const line = getLine(start, end)
+        return line.splice(1).some(this.isSkated.bind(this))
     }
 
     render(context) {
@@ -107,8 +135,8 @@ class MainScene extends YOrderedGroup {
         this.rink = new SkatingRink(this.canvasDims)
         this.addChild(this.rink)
         this.players = []
-        this.addPlayer(['a', 'd'], "#FFFFFF")
-        this.addPlayer(['k', 'l'], '#FFFF00')
+        this.addPlayer(['a', 'd'], "#00FFFF")
+        // this.addPlayer(['k', 'l'], '#FFFF00')
         this.players.forEach(player => this.addChild(player))
         this.camera = new Camera(this.canvasDims.div(2))
         this.addChild(this.camera)
@@ -118,3 +146,5 @@ class MainScene extends YOrderedGroup {
 
 const game = new Game(document.getElementById('game-canvas'));
 game.start(new MainScene());
+
+
