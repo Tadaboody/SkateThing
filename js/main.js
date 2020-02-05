@@ -50,27 +50,36 @@ const RinkStates =
 class SkatingRink extends Node {
     constructor(dimensions, ...args) {
         super(...args)
-        this.grid = new OffscreenCanvas(dimensions.x, dimensions.y)
+        this.drawingCanvas = new OffscreenCanvas(dimensions.x, dimensions.y)
+        // canvas where we draw 1-width lines to make the closed shape detection easier
+        this.shadowCanvas = new OffscreenCanvas(dimensions.x, dimensions.y)
         this.dimensions = dimensions
     }
 
-    setPoint(point, value) {
-        const context = this.grid.getContext("2d");
-        context.fillStyle = value
-        context.fillRect(point.x, point.y, 2, 2)
-    }
-
     setLine(start, end, value) {
-        const context = this.context;
-        context.strokeStyle = value
-        context.lineWidth = 5
-        context.moveTo(start.x, start.y)
-        context.lineTo(end.x, end.y)
-        context.stroke()
+        function draw(context, width) {
+            context.strokeStyle = value
+            context.lineWidth = width
+            context.moveTo(start.x, start.y)
+            context.lineTo(end.x, end.y)
+            context.stroke()
+        }
+        draw(this.drawingCanvas.getContext("2d"), 5)
+        draw(this.shadowCanvas.getContext("2d"), 1)
+        if (this.isIntersection(start, end)) {
+            this.drawingCanvas.getContext("2d").fillStyle = "#FF0000"
+            this.drawingCanvas.getContext("2d").fillRect(end.x, end.y, 10, 10)
+        }
     }
 
-    get context() {
-        return this.grid.getContext("2d");
+    isIntersection(start, end) {
+        const line = [end]
+        const context = this.shadowCanvas.getContext("2d")
+        function isSkated(point) {
+            const data = context.getImageData(point.x, point.y, 1, 1).data
+            return data.every(color => color == 0xFF)
+        }
+        return line.some(isSkated.bind(this))
     }
 
     skatePoint(point) {
@@ -78,7 +87,7 @@ class SkatingRink extends Node {
     }
 
     render(context) {
-        context.drawImage(this.grid, 0, 0)
+        context.drawImage(this.drawingCanvas, 0, 0)
     }
 
 }
