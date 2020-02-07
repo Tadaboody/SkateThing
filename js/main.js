@@ -3,7 +3,7 @@ import Rectangle from "./engino/engino/Nodes/Rectangle.js";
 import { YOrderedGroup } from "./engino/engino/Nodes/YOrderedGroup.js";
 import { Vector2, clamp, Matrix2x2 } from "./engino/engino/Utilities.js";
 import Camera from "./engino/engino/Nodes/Camera.js";
-import { getLine, floor } from "./tools.js";
+import { getLine, floor, neighbors, fourWayNeighbors } from "./tools.js";
 
 
 class Player extends Node {
@@ -91,10 +91,7 @@ class SkatingRink extends Node {
     }
 
     followClosedShape(lastPoint, currentPoint) {
-        function fourWayNeighbors(point) {
-            const directions = [new Vector2(1, 0), new Vector2(-1, 0), new Vector2(0, 1), new Vector2(0, -1)];
-            return directions.map(direction => point.add(direction));
-        }
+        
         let nextPoints = fourWayNeighbors(currentPoint)
         nextPoints = nextPoints.filter(point => !point.equals(lastPoint))
         nextPoints = nextPoints.filter(this.isSkated.bind(this))
@@ -111,7 +108,8 @@ class SkatingRink extends Node {
 
     isIntersection(start, end) {
         const line = getLine(start, end)
-        return line.splice(1).some(this.isSkated.bind(this))
+        const checkedPoints = line.splice(1).flatMap(neighbors).filter(point => !point.equals(line[0]))
+        return checkedPoints.some(this.isSkated.bind(this))
     }
 
     render(context) {

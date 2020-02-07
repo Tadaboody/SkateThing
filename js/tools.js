@@ -35,6 +35,18 @@ export function getLine(start, end) {
     plotLine(start.x, start.y, end.x, end.y)
     return result
 }
+
+export function neighbors(point) {
+  const directions = [new Vector2(1, 0), new Vector2(-1, 0), new Vector2(0, 1), new Vector2(0, -1), 
+                      new Vector2(1, 1), new Vector2(-1, 1), new Vector2(-1, -1), new Vector2(1, -1)];
+  return directions.map(direction => point.add(direction));
+}
+
+export function fourWayNeighbors(point) {
+  const directions = [new Vector2(1, 0), new Vector2(-1, 0), new Vector2(0, 1), new Vector2(0, -1)];
+  return directions.map(direction => point.add(direction));
+}
+
 import { Vector2 } from "./engino/engino/Utilities.js";
 export function floor(point) {
     point = new Vector2(Math.floor(point.x), Math.floor(point.y));
