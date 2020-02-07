@@ -72,9 +72,16 @@ class SkatingRink extends Node {
             context.lineTo(end.x, end.y)
             context.stroke()
         }
+
         draw(this.drawingCanvas.getContext("2d"), 0.5)
-        if (!(start.equals(end)) && this.isIntersection(start, end)) {
-            this.drawingCanvas.getContext("2d").fillRect(end.x, end.y, 10, 10)
+        const intersection = this.getIntersection(start, end);
+        if (!(start.equals(end)) && intersection != undefined) {
+            const shape = this.followClosedShape(intersection)[0]
+            const context = this.drawingCanvas.getContext("2d")
+            context.moveTo(intersection.x, intersection.y)
+            context.fillStyle = "#FF0000"
+            shape.forEach(point => context.fillRect(point.x, point.y, 10, 10))
+            // shape.forEach(point=> this.shadowArray[this.getShaIndex(point)] = )
         }
         this.shadraw(start, end)
     }
@@ -90,28 +97,29 @@ class SkatingRink extends Node {
         return point.x + point.y * this.dimensions.x
     }
 
-    followClosedShape(lastPoint, currentPoint) {
-        function fourWayNeighbors(point) {
-            const directions = [new Vector2(1, 0), new Vector2(-1, 0), new Vector2(0, 1), new Vector2(0, -1)];
-            return directions.map(direction => point.add(direction));
+    followClosedShape(firstPoint, visited = []) {
+        visited.push(firstPoint)
+        const isSkated = this.isSkated.bind(this)
+        let nextPoints = neighbors(firstPoint)
+            .filter(point => !visited.some(other => point.equals(other)))
+            .filter(isSkated)
+        nextPoints.forEach(point => visited.push(point))
+        if (nextPoints.length == 0) {
+            return []
         }
-        let nextPoints = fourWayNeighbors(currentPoint)
-        nextPoints = nextPoints.filter(point => !point.equals(lastPoint))
-        nextPoints = nextPoints.filter(this.isSkated.bind(this))
-        if (nextPoints.length != 1) {
-            console.error("Oh no!")
-            return
+        if (nextPoints.length > 1) {
+            return nextPoints.map(point => this.followClosedShape(point, visited)).filter(li => li.length > 0)
         }
-        return this.followClosedShape(currentPoint, nextPoint)
+        return nextPoints.concat(this.followClosedShape(nextPoints[0], visited))
     }
 
     isSkated(point) {
         return this.shadowArray[this.getShaIndex(point)] == 0xFFFFFF
     }
 
-    isIntersection(start, end) {
+    getIntersection(start, end) {
         const line = getLine(start, end)
-        return line.splice(1).some(this.isSkated.bind(this))
+        return line.splice(1).filter(this.isSkated.bind(this))[0]
     }
 
     render(context) {
