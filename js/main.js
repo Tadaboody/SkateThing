@@ -107,8 +107,14 @@ class SkatingRink extends Node {
     }
 
     isIntersection(start, end) {
+        // The first point is always the last point of the previous line so we 
+        // remove it. 
+        // We check all 8 neighbors as well as the points on themselves since 
+        // diagonal intersections might miss each other. 
+
         const line = getLine(start, end)
-        const checkedPoints = line.splice(1).flatMap(neighbors).filter(point => !point.equals(line[0]))
+        const checkedPoints = line.splice(1).flatMap(neighbors)
+                              .filter(point => !point.equals(line[0]))
         return checkedPoints.some(this.isSkated.bind(this))
     }
 
