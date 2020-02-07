@@ -3,7 +3,7 @@ import Rectangle from "./engino/engino/Nodes/Rectangle.js";
 import { YOrderedGroup } from "./engino/engino/Nodes/YOrderedGroup.js";
 import { Vector2, clamp, Matrix2x2 } from "./engino/engino/Utilities.js";
 import Camera from "./engino/engino/Nodes/Camera.js";
-import { getLine, floor } from "./tools.js";
+import { getLine, floor, neighbors, fourWayNeighbors } from "./tools.js";
 
 
 class Player extends Node {
@@ -118,8 +118,15 @@ class SkatingRink extends Node {
     }
 
     getIntersection(start, end) {
+        // The first point is always the last point of the previous line so we 
+        // remove it. 
+        // We check all 8 neighbors as well as the points on themselves since 
+        // diagonal intersections might miss each other. 
+
         const line = getLine(start, end)
-        return line.splice(1).filter(this.isSkated.bind(this))[0]
+        const checkedPoints = line.splice(1).flatMap(neighbors)
+                              .filter(point => !point.equals(line[0]))
+        return checkedPoints.filter(this.isSkated.bind(this))[0]
     }
 
     render(context) {
